@@ -172,7 +172,7 @@ func (sp *SqueezePlayer) notifyString(data string) {
 	buf.WriteString(data)
 	buf.WriteString("}")
 	// TODO: Send the client as part of the notification to avoid slushing bytes about
-	sp.h.notificationChannel <- buf.Bytes()
+	sp.h.txNotification(buf.Bytes())
 }
 
 func (sp *SqueezePlayer) notify(data []byte) {
@@ -182,7 +182,7 @@ func (sp *SqueezePlayer) notify(data []byte) {
 	buf.Write(data)
 	buf.WriteString("}")
 	// TODO: Send the client as part of the notification to avoid slushing bytes about
-	sp.h.notificationChannel <- buf.Bytes()
+	sp.h.txNotification(buf.Bytes())
 }
 
 // --- raopd.Sink implementation

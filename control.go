@@ -52,8 +52,12 @@ func notifications(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "{ \"serverStatus\": \"OK\" }\r\n")
 	w.(http.Flusher).Flush()
 
+	nc := make(chan []byte, 32)
+	h.addNotificationChannel(nc)
+	defer h.removeNotificationChannel(nc)
+
 	for {
-		not := <-h.notificationChannel
+		not := <-nc
 		log.Debug().Println("SENDING NOTIFICATION: ", string(not))
 		w.Write(not)
 		w.(http.Flusher).Flush()
