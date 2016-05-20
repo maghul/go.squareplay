@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -34,9 +33,6 @@ func (sp *SqueezePlayer) addHandlerFunc(suburl string, handler func(http.Respons
 
 func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 	ff := func() (interface{}, error) {
-		if name != "Magnus Rum" && name != "Experimental" {
-			return nil, errors.New("Not now...")
-		}
 		hwaddr, err := net.ParseMAC(id)
 		if err != nil {
 			return nil, err
