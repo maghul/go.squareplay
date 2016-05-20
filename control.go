@@ -7,10 +7,16 @@ import (
 
 func initControl(mux *http.ServeMux) {
 
+	mux.HandleFunc("/control/restart", restart)
 	mux.HandleFunc("/control/start", start)
 	mux.HandleFunc("/control/notify", notify)
 	mux.HandleFunc("/control/logger", handleLogger)
 	mux.HandleFunc("/notifications.json", notifications)
+}
+
+func restart(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Restarting squareplay server\r\n")
+	shutdownAll()
 }
 
 func start(w http.ResponseWriter, r *http.Request) {

@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"time"
 )
 
 var serverMux *http.ServeMux
+var ln net.Listener
 
 func startServer(port int) {
 	serverMux = http.NewServeMux()
@@ -17,7 +19,7 @@ func startServer(port int) {
 
 	mux := LogHandler(os.Stderr, serverMux)
 
-	s := &http.Server{
+	srv := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
 		Handler:        mux,
 		ReadTimeout:    10 * time.Second,
@@ -25,5 +27,14 @@ func startServer(port int) {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Info().Println(s.ListenAndServe())
+	log.Info.Println("serving at ", GetOutboundIP(), ":", port)
+	//	log.Info.Println(srv.ListenAndServe())
+	var err error
+	ln, err = net.Listen("tcp", srv.Addr)
+	if err != nil {
+		panic(err)
+	}
+	srv.Serve(ln)
+
+	log.Info.Println("Bye bye")
 }

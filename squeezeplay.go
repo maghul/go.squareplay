@@ -51,6 +51,13 @@ func main() {
 	}
 
 	startServer(port)
+
+	log.Info.Println("Closing...")
+	airplayers.Close()
+}
+
+func shutdownAll() {
+	ln.Close()
 }
 
 /*
