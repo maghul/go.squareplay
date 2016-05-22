@@ -3,7 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"golang.org/x/text/encoding/charmap"
 )
+
+var decoder = charmap.ISO8859_1.NewDecoder()
 
 func initControl(mux *http.ServeMux) {
 
@@ -19,10 +23,19 @@ func restart(w http.ResponseWriter, r *http.Request) {
 	shutdownAll()
 }
 
-func start(w http.ResponseWriter, r *http.Request) {
-	id := r.Header.Get("Airplay-Session-Id")
-	name := r.Header.Get("Airplay-Session-Name")
+func getHeader(r *http.Request, name string) string {
 
+	iv := r.Header.Get(name)
+	dv, err := decoder.String(iv)
+	if err != nil {
+		panic(err)
+	}
+	return dv
+}
+
+func start(w http.ResponseWriter, r *http.Request) {
+	id := getHeader(r, "Airplay-Session-Id")
+	name := getHeader(r, "Airplay-Session-Name")
 	log.Info().Println("Starting client: name=", name, ", id=", id)
 
 	host := getHost(r.Host)
