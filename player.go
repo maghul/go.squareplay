@@ -83,6 +83,7 @@ func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
 	sp.addHandlerFunc("audio.pcm", sp.audio)
 	sp.addHandlerFunc("audio.wav", sp.audio)
 	sp.addHandlerFunc("control/", sp.control)
+	sp.addHandlerFunc("time/", sp.seek)
 	sp.addHandlerFunc("control/volume/", sp.volume)
 }
 
