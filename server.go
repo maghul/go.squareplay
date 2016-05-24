@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	stdlog "log"
 	"net"
 	"net/http"
 	"os"
