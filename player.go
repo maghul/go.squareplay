@@ -155,8 +155,15 @@ func (sp *SqueezePlayer) volume(w http.ResponseWriter, r *http.Request) {
 	sp.apService.Volume(sp.getTheCommand(w, r))
 }
 
+func (sp *SqueezePlayer) notifyString(data string) {
+	buf := bytes.NewBufferString("")
+	buf.WriteRune('"')
+	buf.WriteString(data)
+	buf.WriteRune('"')
+	sp.notify(buf.Bytes())
+}
+
 func (sp *SqueezePlayer) notify(data []byte) {
-	fmt.Println("NOTIFY: ", string(data))
 	buf := bytes.NewBufferString("{ \"")
 	buf.WriteString(sp.Id())
 	buf.WriteString("\":")
@@ -185,7 +192,9 @@ func (sp *SqueezePlayer) AudioWriterErr(err error) {
 }
 
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
+	fmt.Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
 	sp.coverData = content
+	sp.notifyString("coverart")
 }
 
 func (sp *SqueezePlayer) SetMetadata(metadata []byte) {
@@ -205,12 +214,15 @@ func (sp *SqueezePlayer) SetProgress(pos, length int) {
 
 // Called when the stream is started.
 func (sp *SqueezePlayer) Play() {
+	sp.notifyString("play")
 }
 
 // Called when the stream is paused
 func (sp *SqueezePlayer) Pause() {
+	sp.notifyString("pause")
 }
 
 // Called when the connection to source is terminated
 func (sp *SqueezePlayer) Close() {
+	sp.notifyString("stop")
 }
