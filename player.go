@@ -219,6 +219,11 @@ func (sp *SqueezePlayer) SetProgress(pos, length int) {
 	sp.notifyString(fmt.Sprintf("{ \"progress\": { \"current\": %d, \"length\": %d }}", pos, length))
 }
 
+// Called when a device has connected, specifically the DACP/Control connection.
+func (sp *SqueezePlayer) Connected(name string) {
+	sp.notifyString(fmt.Sprintf("{ \"source\": \"%s\" }", name))
+}
+
 // Called when the stream is started.
 func (sp *SqueezePlayer) Play() {
 	sp.notifyString("\"play\"")
