@@ -40,3 +40,24 @@ func startServer(port int) {
 
 	ilog.Println("Bye bye")
 }
+
+func initDefault(mux *http.ServeMux) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		url := r.URL.Path[1:]
+		if url == "" {
+			w.Header().Add("Location", "/index.html")
+			w.WriteHeader(302)
+		} else if len(url) > 17 {
+			purl := string(url[0:17])
+			players := allSqueezePlayers.snapshot()
+			player, ok := players[purl]
+			if ok {
+				sp := (player).(*SqueezePlayer)
+
+				sp.playerHandler.ServeHTTP(w, r)
+			} else {
+				w.WriteHeader(503)
+			}
+		}
+	})
+}

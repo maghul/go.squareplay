@@ -7,7 +7,7 @@ import (
 )
 
 func initUsage(mux *http.ServeMux) {
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/index.html", func(w http.ResponseWriter, r *http.Request) {
 		bw := bufio.NewWriter(w)
 		bw.WriteString(`
 <!DOCTYPE html>
