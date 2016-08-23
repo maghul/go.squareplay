@@ -16,9 +16,9 @@ import (
 
 type SqueezePlayer struct {
 	playerHandler *http.ServeMux
-	serviceInfo   *raopd.ServiceInfo
+	serviceInfo   *raopd.SinkInfo
 	pipeReader    io.Reader
-	apService     *raopd.ServiceRef
+	apService     *raopd.Source
 	coverData     []byte
 	metaData      string
 
@@ -37,7 +37,7 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 		if err != nil {
 			return nil, err
 		}
-		si := &raopd.ServiceInfo{
+		si := &raopd.SinkInfo{
 			SupportsAbsoluteVolume: false,
 			SupportsRelativeVolume: false,
 			SupportsCoverArt:       true,
@@ -50,7 +50,7 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 		sp := &SqueezePlayer{nil, si, nil, nil, nil, "", h}
 		sp.initPlayer(serverMux)
 
-		sp.apService, err = apServiceRegistry.RegisterService(sp)
+		sp.apService, err = airplayers.Register(sp)
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func (sp *SqueezePlayer) notify(data []byte) {
 // --- raopd.Sink implementation
 
 // Get the service info for the service.
-func (sp *SqueezePlayer) ServiceInfo() *raopd.ServiceInfo {
+func (sp *SqueezePlayer) Info() *raopd.SinkInfo {
 	return sp.serviceInfo
 }
 
@@ -229,6 +229,10 @@ func (sp *SqueezePlayer) Pause() {
 }
 
 // Called when the connection to source is terminated
-func (sp *SqueezePlayer) Close() {
+func (sp *SqueezePlayer) Stopped() {
 	sp.notifyString("\"stop\"")
+}
+
+// Called when the sink has been removed
+func (sp *SqueezePlayer) Closed() {
 }

@@ -11,7 +11,7 @@ import (
 	"github.com/natefinch/lumberjack"
 )
 
-var airplayers *raopd.AirplaySinkCollection
+var airplayers *raopd.SinkCollection
 
 var ilog *logger
 var dlog *logger
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	var err error
-	airplayers, err = raopd.NewAirplaySinkCollection()
+	airplayers, err = raopd.NewSinkCollection()
 	if err != nil {
 		panic(err)
 	}
