@@ -75,7 +75,7 @@ func (sp *SqueezePlayer) Name() string {
 func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
 	url := fmt.Sprintf("/%s/", sp.Id())
 	sp.playerHandler = http.NewServeMux()
-	log.Debug().Println("URL=", url)
+	dlog.Println("URL=", url)
 	mux.Handle(url, sp.playerHandler)
 
 	sp.addHandlerFunc("metadata.json", sp.metadata)
@@ -129,24 +129,24 @@ func (sp *SqueezePlayer) audio(w http.ResponseWriter, r *http.Request) {
 	bufrw.Flush()
 
 	audioCtx := context.Background()
-	log.Debug().Println("!!!!!!!!!!!!!!!!!!  Waiting for audio pipe to shut down", r.RemoteAddr)
+	dlog.Println("!!!!!!!!!!!!!!!!!!  Waiting for audio pipe to shut down", r.RemoteAddr)
 	sp.apService.NewAudioStream(audioCtx, conn)
 	<-audioCtx.Done()
-	log.Debug().Println("!!!!!!!!!!!!!!!!!!  Audio pipe was shut down", r.RemoteAddr)
+	dlog.Println("!!!!!!!!!!!!!!!!!!  Audio pipe was shut down", r.RemoteAddr)
 }
 
 func (sp *SqueezePlayer) getTheCommand(w http.ResponseWriter, r *http.Request) string {
 	bw := bufio.NewWriter(w)
 	url := r.URL.String()
-	log.Debug().Println("URL=", url)
+	dlog.Println("URL=", url)
 	is := strings.LastIndex(url, "/")
 	if is < 0 {
-		log.Debug().Println("URL=", "bye")
+		dlog.Println("URL=", "bye")
 		w.WriteHeader(400)
 		return ""
 	}
 	url = url[is+1:]
-	log.Debug().Println("URL=", url)
+	dlog.Println("URL=", url)
 	bw.Flush()
 
 	return url
@@ -189,7 +189,7 @@ func (sp *SqueezePlayer) ServiceInfo() *raopd.ServiceInfo {
 }
 
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
-	log.Debug().Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
+	dlog.Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
 	sp.coverData = content
 	sp.notifyString("\"coverart\"")
 }

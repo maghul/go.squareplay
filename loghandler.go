@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -16,6 +17,6 @@ func LogHandler(out io.Writer, wh http.Handler) http.Handler {
 }
 
 func (lh *logHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	log.Debug().Println("ServeHTTP: url=", req.URL, ", client=", req.RemoteAddr)
+	fmt.Fprintln(lh.out, "ServeHTTP: url=", req.URL, ", client=", req.RemoteAddr)
 	lh.wh.ServeHTTP(resp, req)
 }

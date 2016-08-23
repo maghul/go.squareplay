@@ -15,6 +15,7 @@ var ln net.Listener
 func startServer(port int) {
 	serverMux = http.NewServeMux()
 
+	initDefault(serverMux)
 	initUsage(serverMux)
 	initControl(serverMux)
 
@@ -26,10 +27,10 @@ func startServer(port int) {
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   0, // TODO: This should only be set for chunked persistent connection / notifications
 		MaxHeaderBytes: 1 << 20,
+		ErrorLog:       stdlog.New(ilog, "HTTP:", 0),
 	}
 
-	log.Info.Println("serving at ", GetOutboundIP(), ":", port)
-	//	log.Info.Println(srv.ListenAndServe())
+	ilog.Println("serving at port:", port)
 	var err error
 	ln, err = net.Listen("tcp", srv.Addr)
 	if err != nil {
@@ -37,5 +38,5 @@ func startServer(port int) {
 	}
 	srv.Serve(ln)
 
-	log.Info.Println("Bye bye")
+	ilog.Println("Bye bye")
 }

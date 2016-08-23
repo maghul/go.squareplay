@@ -36,7 +36,7 @@ func getHeader(r *http.Request, name string) string {
 func start(w http.ResponseWriter, r *http.Request) {
 	id := getHeader(r, "Airplay-Session-Id")
 	name := getHeader(r, "Airplay-Session-Name")
-	log.Info().Println("Starting client: name=", name, ", id=", id)
+	ilog.Println("Starting client: name=", name, ", id=", id)
 
 	host := getHost(r.Host)
 	_, err := startPlayer(name, id, host)
@@ -71,7 +71,7 @@ func notifications(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		not := <-nc
-		log.Debug().Println("SENDING NOTIFICATION: ", string(not))
+		dlog.Println("SENDING NOTIFICATION: ", string(not))
 		w.Write(not)
 		w.(http.Flusher).Flush()
 
