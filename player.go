@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/maghul/go.raopd"
 )
@@ -19,7 +18,6 @@ import (
 type SqueezePlayer struct {
 	playerHandler *http.ServeMux
 	serviceInfo   *raopd.ServiceInfo
-	pipeWriter    io.Writer
 	pipeReader    io.Reader
 	apService     *raopd.ServiceRef
 	coverData     []byte
@@ -53,7 +51,7 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 			Port:                   0,
 		}
 
-		sp := &SqueezePlayer{nil, si, nil, nil, nil, nil, "", h}
+		sp := &SqueezePlayer{nil, si, nil, nil, nil, "", h}
 		sp.initPlayer(serverMux)
 
 		sp.apService, err = apServiceRegistry.RegisterService(sp)
@@ -133,11 +131,12 @@ func (sp *SqueezePlayer) audio(w http.ResponseWriter, r *http.Request) {
 	bufrw.WriteString("\r\n")
 	bufrw.WriteString("\r\n")
 	bufrw.Flush()
-	sp.pipeWriter = bufrw
-	for {
-		time.Sleep(100 * 1000000)
-		//		bufrw.Flush()
-	}
+
+	audioCtx := context.Background()
+	log.Debug().Println("!!!!!!!!!!!!!!!!!!  Waiting for audio pipe to shut down", r.RemoteAddr)
+	sp.apService.NewAudioStream(audioCtx, conn)
+	<-audioCtx.Done()
+	log.Debug().Println("!!!!!!!!!!!!!!!!!!  Audio pipe was shut down", r.RemoteAddr)
 }
 
 func (sp *SqueezePlayer) getTheCommand(w http.ResponseWriter, r *http.Request) string {
@@ -191,17 +190,6 @@ func (sp *SqueezePlayer) notify(data []byte) {
 // Get the service info for the service.
 func (sp *SqueezePlayer) ServiceInfo() *raopd.ServiceInfo {
 	return sp.serviceInfo
-}
-
-// Get a writer for the audio stream. Only raw PCM with two channel
-// 16-bit depth at 44100 samples/second is currently supported.
-func (sp *SqueezePlayer) AudioWriter() io.Writer {
-	return sp.pipeWriter
-}
-
-func (sp *SqueezePlayer) AudioWriterErr(err error) {
-	fmt.Println("ERROR Writing audio: ", err)
-	sp.pipeWriter = nil
 }
 
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
