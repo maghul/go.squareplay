@@ -17,7 +17,7 @@ func start(w http.ResponseWriter, r *http.Request) {
 	id := r.Header.Get("Airplay-Session-Id")
 	name := r.Header.Get("Airplay-Session-Name")
 
-	fmt.Println("Starting client: name=", name, ", id=", id)
+	log.Info().Println("Starting client: name=", name, ", id=", id)
 
 	host := getHost(r.Host)
 	_, err := startPlayer(name, id, host)
@@ -47,9 +47,8 @@ func notifications(w http.ResponseWriter, r *http.Request) {
 	w.(http.Flusher).Flush()
 
 	for {
-		fmt.Println("Waiting for notifications...")
 		not := <-h.notificationChannel
-		fmt.Println("SENDING NOTIFICATION: ", string(not))
+		log.Debug().Println("SENDING NOTIFICATION: ", string(not))
 		w.Write(not)
 		w.(http.Flusher).Flush()
 

@@ -81,7 +81,7 @@ func (sp *SqueezePlayer) Name() string {
 func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
 	url := fmt.Sprintf("/%s/", sp.Id())
 	sp.playerHandler = http.NewServeMux()
-	fmt.Println("URL=", url)
+	log.Debug().Println("URL=", url)
 	mux.Handle(url, sp.playerHandler)
 
 	sp.addHandlerFunc("metadata.json", sp.metadata)
@@ -143,15 +143,15 @@ func (sp *SqueezePlayer) audio(w http.ResponseWriter, r *http.Request) {
 func (sp *SqueezePlayer) getTheCommand(w http.ResponseWriter, r *http.Request) string {
 	bw := bufio.NewWriter(w)
 	url := r.URL.String()
-	fmt.Println("URL=", url)
+	log.Debug().Println("URL=", url)
 	is := strings.LastIndex(url, "/")
 	if is < 0 {
-		fmt.Println("URL=", "bye")
+		log.Debug().Println("URL=", "bye")
 		w.WriteHeader(400)
 		return ""
 	}
 	url = url[is+1:]
-	fmt.Println("URL=", url)
+	log.Debug().Println("URL=", url)
 	bw.Flush()
 
 	return url
@@ -205,7 +205,7 @@ func (sp *SqueezePlayer) AudioWriterErr(err error) {
 }
 
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
-	fmt.Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
+	log.Debug().Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
 	sp.coverData = content
 	sp.notifyString("\"coverart\"")
 }

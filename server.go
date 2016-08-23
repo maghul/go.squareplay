@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -26,5 +25,5 @@ func startServer(port int) {
 		MaxHeaderBytes: 1 << 20,
 	}
 
-	log.Fatal(s.ListenAndServe())
+	log.Info().Println(s.ListenAndServe())
 }
