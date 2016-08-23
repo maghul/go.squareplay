@@ -5,25 +5,11 @@ import (
 	"fmt"
 
 	"github.com/maghul/go.raopd"
-	"github.com/natefinch/lumberjack"
-	"net/http"
-	_ "net/http/pprof"
 )
 
 var apServiceRegistry *raopd.ServiceRegistry
 
-var log = raopd.GetLogger("squareplay")
-
 func main() {
-	l := raopd.GetLogger("")
-	l.SetLevel(raopd.LogDebug)
-	l.SetOutput(&lumberjack.Logger{
-		Filename:   "/var/log/squeezeboxserver/squareplay.log",
-		MaxSize:    500, // megabytes
-		MaxBackups: 3,
-		MaxAge:     28, //days
-	})
-
 	var port int
 	var profile int
 	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
@@ -37,7 +23,7 @@ func main() {
 	}
 
 	var err error
-	apServiceRegistry, err = raopd.NewServiceRegistry()
+	apServiceRegistry, err = raopd.NewServiceRegistry(getKeyfile())
 	if err != nil {
 		panic(err)
 	}
