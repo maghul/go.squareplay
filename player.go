@@ -38,13 +38,11 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 			return nil, err
 		}
 		si := &raopd.SinkInfo{
-			SupportsAbsoluteVolume: false,
-			SupportsRelativeVolume: false,
-			SupportsCoverArt:       true,
-			SupportsMetaData:       "JSON",
-			Name:                   name,
-			HardwareAddress:        hwaddr,
-			Port:                   0,
+			SupportsCoverArt: true,
+			SupportsMetaData: "JSON",
+			Name:             name,
+			HardwareAddress:  hwaddr,
+			Port:             0,
 		}
 
 		sp := &SqueezePlayer{nil, si, nil, nil, nil, "", h}
@@ -82,9 +80,9 @@ func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
 	sp.addHandlerFunc("cover.jpg", sp.cover)
 	sp.addHandlerFunc("audio.pcm", sp.audio)
 	sp.addHandlerFunc("audio.wav", sp.audio)
-	sp.addHandlerFunc("control/", sp.control)
 	sp.addHandlerFunc("time/", sp.seek)
 	sp.addHandlerFunc("control/volume/", sp.volume)
+	sp.addHandlerFunc("control/", sp.control)
 }
 
 func (sp *SqueezePlayer) close() {
@@ -158,8 +156,24 @@ func (sp *SqueezePlayer) control(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sp *SqueezePlayer) volume(w http.ResponseWriter, r *http.Request) {
-
-	sp.apService.Volume(sp.getTheCommand(w, r))
+	cmd := sp.getTheCommand(w, r)
+	dlog.Println("volume command ", cmd)
+	switch cmd {
+	case "relative":
+		dlog.Println("Setting volume to relative for ", sp)
+		sp.apService.VolumeMode(false)
+	case "absolute":
+		dlog.Println("Setting volume to absolute for ", sp)
+		sp.apService.VolumeMode(true)
+	default:
+		v, err := toRaopVolume(cmd)
+		if err != nil {
+			ilog.Println("Error converting volume ", cmd, ":", err)
+			w.WriteHeader(400)
+			return
+		}
+		sp.apService.Volume(v)
+	}
 }
 
 func (sp *SqueezePlayer) notifyString(data string) {
@@ -209,7 +223,7 @@ func (sp *SqueezePlayer) SetVolume(volume float32) {
 	case -1000:
 		sp.notifyString(fmt.Sprintf("{ \"volume\": \"-2\" }"))
 	default:
-		sp.notifyString(fmt.Sprintf("{ \"volume\": %d }", int(volume)))
+		sp.notifyString(fmt.Sprintf("{ \"volume\": %d }", int(ios2decVolume(volume))))
 	}
 }
 
