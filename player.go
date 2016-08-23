@@ -24,40 +24,50 @@ type SqueezePlayer struct {
 	apService     *raopd.ServiceRef
 	coverData     []byte
 	metaData      string
+
+	h *host
 }
 
-var allSqueezePlayers = make(map[string]*SqueezePlayer)
+var allSqueezePlayers = newSyncMap()
 
 func (sp *SqueezePlayer) addHandlerFunc(suburl string, handler func(http.ResponseWriter, *http.Request)) {
 	sp.playerHandler.HandleFunc(fmt.Sprintf("/%s/%s", sp.Id(), suburl), handler)
 }
 
-func startPlayer(name, id string) (*SqueezePlayer, error) {
-	name = strings.Replace(name, " ", "", -1)
-	hwaddr, err := net.ParseMAC(id)
+func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
+	ff := func() (interface{}, error) {
+		if name != "Magnus Rum" && name != "Experimental" {
+			return nil, errors.New("Not now...")
+		}
+		hwaddr, err := net.ParseMAC(id)
+		if err != nil {
+			return nil, err
+		}
+		si := &raopd.ServiceInfo{
+			SupportsAbsoluteVolume: false,
+			SupportsRelativeVolume: false,
+			SupportsCoverArt:       true,
+			SupportsMetaData:       "JSON",
+			Name:                   name,
+			HardwareAddress:        hwaddr,
+			Port:                   0,
+		}
+
+		sp := &SqueezePlayer{nil, si, nil, nil, nil, nil, "", h}
+		sp.initPlayer(serverMux)
+
+		sp.apService, err = apServiceRegistry.RegisterService(sp)
+		if err != nil {
+			return nil, err
+		}
+
+		return sp, nil
+	}
+	spi, err := allSqueezePlayers.Get(id, ff)
 	if err != nil {
 		return nil, err
 	}
-	si := &raopd.ServiceInfo{
-		SupportsAbsoluteVolume: false,
-		SupportsRelativeVolume: false,
-		SupportsCoverArt:       true,
-		SupportsMetaData:       "JSON",
-		Name:                   name,
-		HardwareAddress:        hwaddr,
-		Port:                   0,
-	}
-
-	sp := &SqueezePlayer{nil, si, nil, nil, nil, nil, ""}
-	allSqueezePlayers[id] = sp
-
-	sp.apService, err = apServiceRegistry.RegisterService(sp)
-	if err != nil {
-		return nil, err
-	}
-
-	sp.initPlayer(serverMux)
-	return sp, nil
+	return spi.(*SqueezePlayer), err
 }
 
 func (sp *SqueezePlayer) Id() string {
@@ -163,7 +173,7 @@ func (sp *SqueezePlayer) notifyString(data string) {
 	buf.WriteString(data)
 	buf.WriteString("}")
 	// TODO: Send the client as part of the notification to avoid slushing bytes about
-	notificationChannel <- buf.Bytes()
+	sp.h.notificationChannel <- buf.Bytes()
 }
 
 func (sp *SqueezePlayer) notify(data []byte) {
@@ -173,7 +183,7 @@ func (sp *SqueezePlayer) notify(data []byte) {
 	buf.Write(data)
 	buf.WriteString("}")
 	// TODO: Send the client as part of the notification to avoid slushing bytes about
-	notificationChannel <- buf.Bytes()
+	sp.h.notificationChannel <- buf.Bytes()
 }
 
 // --- raopd.Sink implementation
