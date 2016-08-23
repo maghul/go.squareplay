@@ -1,0 +1,22 @@
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+)
+
+type logHandler struct {
+	out io.Writer
+	wh  http.Handler
+}
+
+func LogHandler(out io.Writer, wh http.Handler) http.Handler {
+	lh := &logHandler{out, wh}
+	return lh
+}
+
+func (lh *logHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	fmt.Fprintln(lh.out, "ServeHTTP: url=", req.URL)
+	lh.wh.ServeHTTP(resp, req)
+}

@@ -1,29 +1,28 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"time"
+	"flag"
+	"fmt"
+
+	"github.com/maghul/go.raopd"
 )
 
-var serverMux *http.ServeMux
+var apServiceRegistry *raopd.ServiceRegistry
 
 func main() {
-	serverMux = http.NewServeMux()
+	fmt.Println("Starting SquarePlay Proxy 0.0.1(beta)")
 
-	initUsage(serverMux)
+	var port int
+	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
+	flag.Parse()
 
-	startPlayer("Hejsan", "123")
-
-	s := &http.Server{
-		Addr:           ":8082",
-		Handler:        serverMux,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+	var err error
+	apServiceRegistry, err = raopd.NewServiceRegistry()
+	if err != nil {
+		panic(err)
 	}
 
-	log.Fatal(s.ListenAndServe())
+	startServer(port)
 }
 
 /*
@@ -32,6 +31,7 @@ An AirPlay to squeezeserver proxy. Will start a web-server which can server audi
 metadata for airplay sessions.
 It also support configuation and dynamic service handling.
 
-The web URIs supported are
+The web URIs supported are found at http://<thisserver>/doc
+
 
 */

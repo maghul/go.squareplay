@@ -45,8 +45,8 @@ p {
 `)
 
 		for _, player := range allSqueezePlayers {
-			mac := player.mac
-			fmt.Fprintf(bw, "<h2>%s : %s</h2>\n", player.name, mac)
+			mac := player.Id()
+			fmt.Fprintf(bw, "<h2>%s : %s</h2>\n", player.Name(), mac)
 			fmt.Fprintf(bw, "<p>  AUDIO:<a href=\"%s/audio.pcm\">%s/audio.pcm</a></p>\n", mac, mac)
 			fmt.Fprintf(bw, "<p>  COVER:<a href=\"%s/cover.jpg\">%s/cover.jpg</a></p>\n", mac, mac)
 			//			fmt.Fprintf( bw, "<p>  RAOP: '%p'", cls->raop )
@@ -144,6 +144,20 @@ p {
 </tr>
 </table>
 <h2>Notifications</h2>
+Notifications are sent on a persustent chunked HTTP response on a http://<server>/notifications.js
+request. They are sequence with a sequence number in the "chunk_extension" header in each chunk.
+<h4>There are three notification messages.</h4>
+<ul>
+<li>dmap.listingitem</li> A json hash literal containig metadata about the current track
+<li>volume</li> A volume change from the iDevice. The value may be an absolute between 0..100 or +2 and -2
+for a relative volume.
+<li>progress</li>A JSON hash literal containing 
+{
+    current=<time>;
+    length=<time>;
+}
+Where time is in milliseconds.
+
 </body>
 </html>
 `)
