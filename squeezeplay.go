@@ -45,7 +45,7 @@ func main() {
 	}
 
 	var err error
-	apServiceRegistry, err = raopd.NewServiceRegistry(getKeyfile())
+	apServiceRegistry, err = raopd.NewServiceRegistry()
 	if err != nil {
 		panic(err)
 	}
