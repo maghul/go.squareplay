@@ -6,6 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/maghul/go.raopd"
 	"github.com/natefinch/lumberjack"
@@ -51,6 +54,32 @@ func main() {
 		panic(err)
 	}
 
+	initSignals()
+	startServer(port)
+
+	slog.Info.Println("Stopping Squareplay...")
+	airplayers.Close()
+}
+
+func shutdownAll() {
+	ln.Close()
+	airplayers.Close()
+	time.Sleep(100 * time.Millisecond)
+	os.Exit(0)
+}
+
+func initSignals() {
+	sc := make(chan os.Signal)
+	signal.Notify(sc)
+	go func() {
+		for {
+			s := <-sc
+			ilog.Println("Received Signal: ", s)
+			if s == os.Interrupt || s == os.Kill || s == syscall.SIGTERM {
+				shutdownAll()
+			}
+		}
+	}()
 	startServer(port)
 
 	ilog.Println("Closing...")
@@ -59,6 +88,9 @@ func main() {
 
 func shutdownAll() {
 	ln.Close()
+	airplayers.Close()
+	time.Sleep(100 * time.Millisecond)
+	os.Exit(0)
 }
 
 /*
