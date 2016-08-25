@@ -21,8 +21,13 @@ var dlog *logger
 var logfilename = ""
 
 func main() {
-	// TODO: add option
-	logfilename = "/var/log/squeezeboxserver/squareplay.log"
+	var port int
+	var profile int
+	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
+	flag.IntVar(&profile, "pprof", 0, "Set to a port to enable profiling")
+	flag.StringVar(&logfilename, "l", "", "Set the logfile name, if omitted log to stderr")
+	flag.Parse()
+
 	if logfilename != "" {
 		ljl := &lumberjack.Logger{
 			Filename:   logfilename,
@@ -35,12 +40,6 @@ func main() {
 	} else {
 		ilog = makeLogger("", os.Stderr)
 	}
-
-	var port int
-	var profile int
-	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
-	flag.IntVar(&profile, "pprof", 0, "Set to a port to enable profiling")
-	flag.Parse()
 
 	ilog.Println("Starting SquarePlay Proxy 0.0.1(beta)")
 
