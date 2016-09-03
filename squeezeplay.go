@@ -19,13 +19,30 @@ var airplayers *raopd.SinkCollection
 var ilog *logger
 var dlog *logger
 var logfilename = ""
+var keyfilename = ""
 
+func raopdDebug(name string, value interface{}) {
+	ilog.Println("Setting RAOP debug: ", name)
+	err := raopd.Debug(name, value)
+	if err != nil {
+		ilog.Println("Could not set RAOP Debug '", name, "': ", err)
+	}
+}
+
+func initDebug() {
+	raopdDebug("sequencetrace", true)
+	raopdDebug("volumetrace", true)
+	raopdDebug("log.debug/*", dlog)
+	raopdDebug("log.info/*", ilog)
+
+}
 func main() {
 	var port int
 	var profile int
-	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
+	flag.IntVar(&port, "p", 6111, "The server port for the proxy")
 	flag.IntVar(&profile, "pprof", 0, "Set to a port to enable profiling")
 	flag.StringVar(&logfilename, "l", "", "Set the logfile name, if omitted log to stderr")
+	flag.StringVar(&keyfilename, "k", "", "Set the keyfile path")
 	flag.Parse()
 
 	if logfilename != "" {
@@ -41,14 +58,20 @@ func main() {
 		ilog = makeLogger("", os.Stderr)
 	}
 
-	ilog.Println("Starting SquarePlay Proxy 0.0.1(beta)")
+	ilog.Println("Starting SquarePlay Proxy 0.0.2")
+	initDebug()
 
 	if profile > 0 {
 		go http.ListenAndServe(fmt.Sprintf(":%d", profile), nil)
 	}
 
+	if len(keyfilename) == 0 {
+		ilog.Println("No keyfile specified. exiting")
+		return
+	}
 	var err error
-	airplayers, err = raopd.NewSinkCollection()
+	ilog.Printf("Starting with keyfile='%s'", keyfilename)
+	airplayers, err = raopd.NewSinkCollection(keyfilename)
 	if err != nil {
 		panic(err)
 	}
