@@ -27,15 +27,9 @@ func raopdDebug(name string, value interface{}) {
 	if err != nil {
 		ilog.Println("Could not set RAOP Debug '", name, "': ", err)
 	}
+	ilog.Println("Setting RAOP debug: ", name, "  done")
 }
 
-func initDebug() {
-	raopdDebug("sequencetrace", true)
-	raopdDebug("volumetrace", true)
-	raopdDebug("log.debug/*", dlog)
-	raopdDebug("log.info/*", ilog)
-
-}
 func main() {
 	var port int
 	var profile int
@@ -54,12 +48,12 @@ func main() {
 		}
 		ljl.Rotate()
 		ilog = makeLogger("squareplay", ljl)
+		dlog = makeLogger("squareplay", ljl)
 	} else {
 		ilog = makeLogger("", os.Stderr)
 	}
 
 	ilog.Println("Starting SquarePlay Proxy 0.0.2")
-	initDebug()
 
 	if profile > 0 {
 		go http.ListenAndServe(fmt.Sprintf(":%d", profile), nil)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"golang.org/x/text/encoding/charmap"
 )
@@ -102,7 +103,33 @@ func notify(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLogger(w http.ResponseWriter, r *http.Request) {
-	// This is to set logging levels.
+	url := r.URL.String()
+	is := strings.LastIndex(url, "/")
+	if is < 0 {
+		dlog.Println("Failed to decode URL=", url)
+		w.WriteHeader(400)
+		return
+	}
+	ss := strings.Split(url[is:], "?")
+	logger := strings.ToLower(ss[0])
+	level := strings.ToLower(ss[1])
+
+	switch level {
+	case "off":
+		raopdDebug(fmt.Sprint("log.info/", logger), nil)
+		raopdDebug(fmt.Sprint("log.debug/", logger), nil)
+	case "info":
+		raopdDebug(fmt.Sprint("log.info/", logger), ilog)
+		raopdDebug(fmt.Sprint("log.debug/", logger), nil)
+	case "debug":
+		raopdDebug(fmt.Sprint("log.info/", logger), ilog)
+		raopdDebug(fmt.Sprint("log.debug/", logger), dlog)
+	case "true":
+		raopdDebug(logger, true)
+	case "false":
+		raopdDebug(logger, false)
+
+	}
 }
 
 func notifications(w http.ResponseWriter, r *http.Request) {

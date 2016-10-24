@@ -86,8 +86,47 @@ p {
 <td><pre>http://&lt;server&gt;/control/start</pre></td>
 <td>Start a SquarePlay service. This becomes a new service for AirPlay devices to connect to</td>
 </tr><tr>
-<td><pre>http://&lt;server&gt;/control/logger</pre></td>
-<td></td>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.audio?&lt;off|info|debug&gt;</pre></td>
+<td>Set audio logger</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.dacp?&lt;off|info|debug&gt;</pre></td>
+<td>Set DACP logger for remote control of iDevice/td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.dmap?&lt;off|info|debug&gt;</pre></td>
+<td>Set DMAP logger, /td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.auth?&lt;off|info|debug&gt;</pre></td>
+<td>Log authorizations</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.net?&lt;off|info|debug&gt;</pre></td>
+<td>Log low level network activity</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.raop?&lt;off|info|debug&gt;</pre></td>
+<td>Log RAOP commands</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.rtp?&lt;off|info|debug&gt;</pre></td>
+<td>Log RTP activity</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.rtsp?&lt;off|info|debug&gt;</pre></td>
+<td>Log RTSP activity/td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.sequencer?&lt;off|info|debug&gt;</pre></td>
+<td>Log sequencer activity</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.volume?&lt;off|info|debug&gt;</pre></td>
+<td>Log volume handling</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/raopd.zeroconf?&lt;off|info|debug&gt;</pre></td>
+<td>Log ZeroConf/Bonjour activity</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/*?&lt;off|info|debug&gt;</pre></td>
+<td>Set level for all loggers</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/sequencetrace?&lt;false|true&gt;</pre></td>
+<td>Enable sequencetrace log, this will create a separate logfile specifically for sequencer in /tmp/*.sequencetrace.log</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/control/logger/volumetrace?&lt;false|true&gt;</pre></td>
+<td>Enable volumetrace log, this will create a separate logfile specifically for volume handle in /tmp/*.volumetrace.log</td>
 </tr><tr>
 <td><pre>http://&lt;server&gt;/&lt;client&gt;/metadata.json</pre></td>
 <td>Get the metadata of the current song</td>
