@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -24,8 +25,7 @@ func initUsage(mux *http.ServeMux) {
 <a href="/html/doc.html">Documentation on useage can be found here</a></h1>
 `)
 
-		for _, playeri := range allSqueezePlayers.snapshot() {
-			player := playeri.(*SqueezePlayer)
+		for _, player := range makePlayerarray() {
 			mac := player.Id()
 			fmt.Fprintf(bw, "<h2>%s : %s</h2>\n", player.Name(), mac)
 			fmt.Fprintf(bw, "<p>  AUDIO:<a href=\"%s/audio.pcm\">%s/audio.pcm</a></p>\n", mac, mac)
