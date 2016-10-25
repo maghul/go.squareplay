@@ -1,0 +1,24 @@
+
+body {
+    background-color: #d0e4fe;
+    font-family: Helvetica;
+}
+
+h1 {
+    color: orangered;
+    background-color: aliceblue;
+    font-family: Helvetica;
+    font-size: 38px;
+}
+
+h2 {
+    color: orange;
+    background-color: aliceblue;
+    font-family: Helvetica;
+    font-size: 30px;
+}
+
+p {
+    font-family: Helvetica;
+    font-size: 16px;
+}
