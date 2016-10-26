@@ -22,7 +22,8 @@ func initUsage(mux *http.ServeMux) {
 </head>
 <body>
 <h1>SquarePlay server</h1>
-<a href="/html/doc.html">Documentation on useage can be found here</a></h1>
+<a href="/html/doc.html">Documentation on useage can be found here</a><br>
+<a href="/logging.html">Log settings</a><br>
 `)
 
 		for _, player := range makePlayerarray() {

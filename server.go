@@ -18,6 +18,7 @@ func startServer(port int) {
 	initDefault(serverMux)
 	initUsage(serverMux)
 	initControl(serverMux)
+	initLogHandler(serverMux)
 
 	mux := LogHandler(os.Stderr, serverMux)
 
