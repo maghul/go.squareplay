@@ -29,8 +29,9 @@ func initUsage(mux *http.ServeMux) {
 		for _, player := range makePlayerarray() {
 			mac := player.Id()
 			fmt.Fprintf(bw, "<h2>%s : %s</h2>\n", player.Name(), mac)
-			fmt.Fprintf(bw, "<p>  AUDIO:<a href=\"%s/audio.pcm\">%s/audio.pcm</a></p>\n", mac, mac)
-			fmt.Fprintf(bw, "<p>  COVER:<a href=\"%s/cover.jpg\">%s/cover.jpg</a></p>\n", mac, mac)
+			fmt.Fprintf(bw, "<p>   AUDIO:<a href=\"%s/audio.pcm\">%s/audio.pcm</a></p>\n", mac, mac)
+			fmt.Fprintf(bw, "<p>   COVER:<a href=\"%s/cover.jpg\">%s/cover.jpg</a></p>\n", mac, mac)
+			fmt.Fprintf(bw, "<p>METADATA:\n%s</p>\n", player.metaData)
 			//			fmt.Fprintf( bw, "<p>  RAOP: '%p'", cls->raop )
 			//			if (cls->raop) {
 			//				fmt.Fprintf( bw, "<p>     DACP: '%s'", dacp_state(cls->raop) );
