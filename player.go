@@ -235,9 +235,9 @@ func (sp *SqueezePlayer) SetMetadata(metadata string) {
 func (sp *SqueezePlayer) SetVolume(volume float32) {
 	switch volume {
 	case 1000:
-		sp.notifyString(fmt.Sprintf("{ \"volume\": \"+2\" }"))
+		sp.notifyString("{ \"volume\": \"+2\" }")
 	case -1000:
-		sp.notifyString(fmt.Sprintf("{ \"volume\": \"-2\" }"))
+		sp.notifyString("{ \"volume\": \"-2\" }")
 	default:
 		sp.notifyString(fmt.Sprintf("{ \"volume\": %d }", int(ios2decVolume(volume))))
 	}
