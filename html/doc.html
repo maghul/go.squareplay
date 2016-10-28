@@ -18,11 +18,15 @@
 <td><pre>http://&lt;server&gt;/notifications.json</pre></td>
 <td>Get notifications from the server, such as </td>
 </tr><tr>
-<td><pre>http://&lt;server&gt;/control/notify</pre></td>
-<td></td>
-</tr><tr>
 <td><pre>http://&lt;server&gt;/control/start</pre></td>
-<td>Start a SquarePlay service. This becomes a new service for AirPlay devices to connect to</td>
+<td>Start a SquarePlay service. This becomes a new service for AirPlay devices to connect to. This should
+  be sent as a POST request with JSON encoded parameters.
+  <pre>
+    { "Name": "My Player", "Id": ""00:04:20:12:91:82"" }
+  </pre>
+  The name is a presentation name for publising the player and the Id is used in subsequent requests and
+  notifications.
+</td>
 </tr><tr>
 <td><pre>http://&lt;server&gt;/control/logger/raopd.audio?&lt;off|info|debug&gt;</pre></td>
 <td>Set audio logger</td>
@@ -78,7 +82,21 @@
 <td><pre>http://&lt;server&gt;/&lt;client&gt;/audio.wav</pre></td>
 <td>Get the audio as PCM</td>
 </tr><tr>
-<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volume=<volume></pre></td>
+<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volume=absolute</pre></td>
+<td>Set the volume using absolute mode. This send volume notifications with the values 0..100 for volume
+changed by the iDevice. The volume set using the player control command will be reflected on
+the iDevice volume bar. This will not actually change the volume on the iDevice only
+the GUI. </td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volume=relative</pre></td>
+<td>Set the volume control to relative mode. This will set the knob on the volume
+bar on the iDevice to the center. If the bar is dragged down or the lower volume
+button is pressed volume notifications of "-2" will be sent. Similarly notifications
+of "+2" will be sent when the volume is dragged up or the raise volume button
+is pressed. This is useful to control amplifier which can only relative volume
+changes.</td>
+</tr><tr>
+<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volume=&lt;0..100&gt;</pre></td>
 <td>Set the volume of the iDevice. This will not actually change the volume on the device but is used to indicate the volume of the Squeezebox</td>
 </tr><tr>
 <td><pre>http://&lt;server&gt;/&lt;client&gt;/control/beginff</pre></td>
@@ -114,27 +132,90 @@
 <td><pre>http://&lt;server&gt;/&lt;client&gt;/control/shuffle_songs</pre></td>
 <td>shuffle playlist</td>
 </tr><tr>
-<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volumedown</pre></td>
-<td>turn audio volume down</td>
+<td><pre style="color: lightcoral">http://&lt;server&gt;/&lt;client&gt;/control/volumedown</pre></td>
+<td>turn audio volume down. Do not use this command directly instead
+use the volume commands for the player.</td>
 </tr><tr>
-<td><pre>http://&lt;server&gt;/&lt;client&gt;/control/volumeup</pre></td>
-<td>turn audio volume up</td>
+<td><pre style="color: lightcoral">http://&lt;server&gt;/&lt;client&gt;/control/volumeup</pre></td>
+<td>turn audio volume up. Do not use this command directly instead
+use the volume commands for the player.</td>
 </tr>
 </table>
 <h2>Notifications</h2>
-Notifications are sent on a persustent chunked HTTP response on a http://<server>/notifications.js
-request. They are sequence with a sequence number in the "chunk_extension" header in each chunk.
-<h4>There are three notification messages.</h4>
+Notifications are sent on a persistent chunked HTTP response on a http://<server>/notifications.js
+request. They are sequenced with a sequence number in the "chunk_extension" header in each chunk.
+<h4>Client notification messages.</h4>
 <ul>
-<li>dmap.listingitem</li> A json hash literal containig metadata about the current track
-<li>volume</li> A volume change from the iDevice. The value may be an absolute between 0..100 or +2 and -2
+<li>dmap.listingitem</li> A json hash literal containig metadata about the current track. This is
+decoded DMAP data sent from the iDevice. An example of this:
+<pre>
+{"00:04:20:12:91:82":{
+    "dmap.listingitem": {
+	"dmap.persistentid": 5430862379420041683,
+        "daap.songalbum": "Tom\ Lehrer Revisited",
+        "daap.songartist": "Lehrer, Tom",
+        "daap.songcomposer": "",
+        "daap.songgenre": "Humor",
+        "dmap.itemname": "Introduction",
+        "daap.songtracknumber": 1,
+        "daap.songtrackcount": 14,
+        "daap.songdiscnumber": 1,
+        "daap.songdatakind": 0,
+        "dacp.playerstate": 2,
+        "daap.songtime": 207748
+    }
+}}
+</pre>
+<li>volume</li> A volume change from the iDevice. The values are either 0...100 for an absoute
+volume or "+2" and "-2" for relative volume changes.
 for a relative volume.
+<pre>
+{ "00:04:20:12:91:82":{ "volume": "-2" }}
+</pre>
+<pre>
+{ "00:04:20:12:91:82":{ "volume": "+2" }}
+</pre>
+<pre>
+{ "00:04:20:12:91:82":{ "volume": 37.124881 }}
+</pre>
+<li>source</li>A source has connected to the raop service.
+<pre>
+"{ \"00:04:20:12:91:82\":{ \"source\": \"My-iPhone.local\" }}"
+</pre>
+
 <li>progress</li>A JSON hash literal containing 
 {
     current=<time>;
     length=<time>;
 }
-Where time is in milliseconds.
-
+    Where time is in milliseconds.
+<pre>http://&lt;server&gt;/&lt;client&gt;/cover.jpg
+	{ "00:04:20:12:91:82":{ "progress": { "current": 11037, "length": 10564288 }}}
+</pre>
+<li>start</li>A stream has started.
+<pre>
+  { "00:04:20:12:91:82":"start"}
+</pre>
+<li>stop</li>A stream has stopped.
+<pre>
+  { "00:04:20:12:91:82":"stop"}
+</pre>
+<li>pause</li>A stream has paused.
+<pre>
+  { "00:04:20:12:91:82":"pause"}
+</pre>
+    <li>coverart</li>Coverart has updated and can be retrieved using <pre>http://&lt;server&gt;/&lt;client&gt;/cover.jpg</pre>
+<pre>
+  { "00:04:20:12:91:82":"coverart"}
+</pre>
+</ul>
+<h4>Server notification messages.</h4>
+<ul>
+<li>serverStatus</li>Returns the currents state of the server. Will currently only
+send "OK" on initial connect.
+<pre>
+  { "serverStatus": "OK" }
+</pre>
+</ul>
 </body>
 </html>
