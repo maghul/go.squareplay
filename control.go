@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/maghul/go.slf"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -50,27 +51,26 @@ func decodePlayers(w http.ResponseWriter, r *http.Request) []*playerJson {
 	d := json.NewDecoder(r.Body)
 	err := d.Decode(&pa)
 	if err != nil {
-		ilog.Println("Error decoding start request:", err)
+		slog.Debug.Println("Error decoding '", r.Body, "': err=", err)
 		w.WriteHeader(500)
+		fmt.Fprintln(w, "decodePlayers: Error decoding '", r.Body, "': err=", err)
 	}
 	return pa
 }
 
 func start(w http.ResponseWriter, r *http.Request) {
-	ilog.Println("client/start called")
-
 	host := getHost(r.Host)
 	w.Header().Add("Content-Type", "text/text")
 	fmt.Fprintf(w, "[\r\n")
 	for _, pj := range decodePlayers(w, r) {
-		ilog.Println("Starting player: ", pj, " from host", host)
+		slog.Info.Println("Starting player: ", pj, " from host", host)
 		_, err := startPlayer(pj.Name, pj.Id, host)
 		if err != nil {
+			slog.Info.Printf("Player %s[%s] could not be started: %v", pj.Name, pj.Id, err)
 			w.WriteHeader(404)
-			ilog.Printf("Player %s[%s] could not be started: %v\n", pj.Name, pj.Id, err)
 			fmt.Fprintf(w, "{ \"%s\": \"Failed\" }\r\n", pj.Id)
 		} else {
-			ilog.Printf("Player %s[%s] started\n", pj.Name, pj.Id)
+			slog.Info.Printf("Player %s[%s] started", pj.Name, pj.Id)
 			fmt.Fprintf(w, "{ \"%s\": \"OK\" }\r\n", pj.Id)
 		}
 	}
@@ -78,20 +78,16 @@ func start(w http.ResponseWriter, r *http.Request) {
 }
 
 func stop(w http.ResponseWriter, r *http.Request) {
-	ilog.Println("client/stop called")
-
-	host := getHost(r.Host)
 	w.Header().Add("Content-Type", "text/text")
 	fmt.Fprintf(w, "[\r\n")
 	for _, pj := range decodePlayers(w, r) {
-		ilog.Println("Stopping player: ", pj, " from host", host)
 		err := stopPlayer(pj.Name, pj.Id)
 		if err != nil {
 			w.WriteHeader(404)
-			ilog.Printf("Player %s[%s] could not be stopped: %v\n", pj.Name, pj.Id, err)
+			slog.Info.Printf("Player %s[%s] could not be stopped: %v", pj.Name, pj.Id, err)
 			fmt.Fprintf(w, "{ \"%s\": \"Failed\" }\r\n", pj.Id)
 		} else {
-			ilog.Printf("Player %s[%s] stopped\n", pj.Name, pj.Id)
+			slog.Info.Printf("Player %s[%s] stopped", pj.Name, pj.Id)
 			fmt.Fprintf(w, "{ \"%s\": \"Bye\" }\r\n", pj.Id)
 		}
 	}
@@ -106,8 +102,29 @@ func handleLogger(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.String()
 	is := strings.LastIndex(url, "/")
 	if is < 0 {
-		dlog.Println("Failed to decode URL=", url)
+		slog.Debug.Println("handleLogger: Failed to decode URL=", url)
 		w.WriteHeader(400)
+		fmt.Fprintln(w, "handleLogger: Failed to decode URL=", url)
+		return
+	}
+	ss := strings.Split(url[is:], "?")
+	err := slf.SetLevel(ss[0], ss[1])
+	if err != nil {
+		slog.Debug.Println("handleLogger: ", err)
+		w.WriteHeader(400)
+		fmt.Fprintln(w, "handleLogger: ", err)
+		return
+	}
+
+}
+
+func handleRaopDebug(w http.ResponseWriter, r *http.Request) {
+	url := r.URL.String()
+	is := strings.LastIndex(url, "/")
+	if is < 0 {
+		slog.Debug.Println("Failed to decode URL=", url)
+		w.WriteHeader(400)
+		fmt.Fprintln(w, "handleLogger: Failed to decode URL=", url)
 		return
 	}
 	ss := strings.Split(url[is:], "?")
@@ -115,21 +132,13 @@ func handleLogger(w http.ResponseWriter, r *http.Request) {
 	level := strings.ToLower(ss[1])
 
 	switch level {
-	case "off":
-		raopdDebug(fmt.Sprint("log.info/", logger), nil)
-		raopdDebug(fmt.Sprint("log.debug/", logger), nil)
-	case "info":
-		raopdDebug(fmt.Sprint("log.info/", logger), ilog)
-		raopdDebug(fmt.Sprint("log.debug/", logger), nil)
-	case "debug":
-		raopdDebug(fmt.Sprint("log.info/", logger), ilog)
-		raopdDebug(fmt.Sprint("log.debug/", logger), dlog)
 	case "true":
 		raopdDebug(logger, true)
 	case "false":
 		raopdDebug(logger, false)
 
 	}
+
 }
 
 func notifications(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +156,7 @@ func notifications(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		not := <-nc
-		dlog.Println("SENDING NOTIFICATION: ", string(not))
+		slog.Debug.Println("Notification: ", string(not))
 		w.Write(not)
 		w.(http.Flusher).Flush()
 

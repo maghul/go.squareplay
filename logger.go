@@ -3,49 +3,77 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/maghul/go.slf"
+	"github.com/natefinch/lumberjack"
 )
 
-type logger struct {
-	wr   io.Writer
-	name string
+type logOutput struct {
+	wr  io.Writer
+	mtx sync.Mutex
 }
+
+var slog = slf.GetLogger("squareplay")
 
 var prev time.Time
 
 const LOGCALLER = false
 const timestampFormat = "15:04:05"
 
-func makeLogger(name string, wr io.Writer) *logger {
-	return &logger{wr, name}
+func initLogging() {
+	var lo = makeSquareplayLoggerOutput()
+	if logfilename != "" {
+		ljl := &lumberjack.Logger{
+			Filename:   logfilename,
+			MaxSize:    500, // megabytes
+			MaxBackups: 3,
+			MaxAge:     28, //days
+		}
+		ljl.Rotate()
+
+		lo.wr = ljl
+	} else {
+		lo.wr = os.Stderr
+	}
+
+	o := slf.Output(lo)
+	slog.SetOutputLogger(o)
+	slf.GetLogger("raopd").SetParent(slog)
+	slog.SetLevel(slf.Info)
 }
 
-func (wr *logger) Println(d ...interface{}) {
-	if wr == nil {
+func (lo *logOutput) Print(ref string, lvl slf.Level, d ...interface{}) {
+	if lo == nil {
 		return
 	}
 	msg := fmt.Sprint(d...)
 
-	wr.Write([]byte(msg))
+	lo.WriteMessage(ref, []byte(msg))
 }
 
-func (wr *logger) Printf(fmts string, d ...interface{}) {
-	if wr == nil {
+func (lo *logOutput) Printf(ref string, lvl slf.Level, args string, d ...interface{}) {
+	if lo == nil {
 		return
 	}
-	msg := fmt.Sprintf(fmts, d...)
+	msg := fmt.Sprintf(args, d...)
 
-	wr.Write([]byte(msg))
+	lo.WriteMessage(ref, []byte(msg))
 }
 
-func (wr *logger) Write(p []byte) (n int, err error) {
-	if wr == nil {
-		return 0, nil
+func (lo *logOutput) WriteMessage(ref string, p []byte) {
+	if lo == nil {
+		return
 	}
 
-	w := wr.wr
+	lo.mtx.Lock()
+	defer lo.mtx.Unlock()
+
+	w := lo.wr
 	now := time.Now()
 
 	nd := prev.Day() != now.Day()
@@ -65,11 +93,19 @@ func (wr *logger) Write(p []byte) (n int, err error) {
 	}
 
 	prefix := fmt.Sprintf("%s.%3.3d %s- ",
-		now.Format(timestampFormat), now.Nanosecond()/1000000, wr.name)
+		now.Format(timestampFormat), now.Nanosecond()/1000000, ref)
 	prefix = strings.Replace(prefix, ":", "", -1)
 	for _, l := range strings.Split(string(p), "\n") {
 		fmt.Fprintln(w, prefix, l, errloc)
 		//			fmt.Println(w, prefix, l)
 	}
-	return len(p), nil
+}
+
+func makeSquareplayLoggerOutput() *logOutput {
+	mdo := &logOutput{}
+	return mdo
+}
+
+func (lo *logOutput) String() string {
+	return "Squareplay Logger"
 }

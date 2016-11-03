@@ -9,59 +9,41 @@ import (
 	"strings"
 
 	"github.com/maghul/go.raopd"
+	"github.com/maghul/go.slf"
 )
 
-type logHandler struct {
+type logAdmin struct {
 	out io.Writer
 	wh  http.Handler
 }
 
-func LogHandler(out io.Writer, wh http.Handler) http.Handler {
-	lh := &logHandler{out, wh}
+func LogAdminHandler(out io.Writer, wh http.Handler) http.Handler {
+	lh := &logAdmin{out, wh}
 	return lh
 }
 
-func (lh *logHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (lh *logAdmin) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	fmt.Fprintln(lh.out, "ServeHTTP: url=", req.URL, ", client=", req.RemoteAddr)
 	lh.wh.ServeHTTP(resp, req)
 }
 
 type logSetting struct {
-	name     string
-	setting  string
-	settings string
-	setter   func(ls *logSetting)
+	name        string
+	description string
+	setting     string
+	settings    string
+	setter      func(ls *logSetting)
 }
 
 var logSettings = []*logSetting{
-	&logSetting{"sequencetrace", "off", "off|on", setRaopTraceLogging},
-	&logSetting{"volumetrace", "off", "off|on", setRaopTraceLogging},
-
-	&logSetting{"raopd.dacp", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.dmap", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.auth", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.net", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.raop", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.rtp", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.rtsp", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.sequencer", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.volume", "off", "off|info|debug", setRaopLogging},
-	&logSetting{"raopd.zeroconf", "off", "off|info|debug", setRaopLogging},
+	&logSetting{"sequencetrace", "Trace Packet sequencing", "off", "off|on", setRaopTraceLogging},
+	&logSetting{"volumetrace", "Trace Volume handling", "off", "off|on", setRaopTraceLogging},
 }
 
 func setRaopLogging(ls *logSetting) {
-	dlr := fmt.Sprint("log.debug/", ls.name)
-	ilr := fmt.Sprint("log.info/", ls.name)
-	switch ls.setting {
-	case "off":
-		raopd.Debug(ilr, nil)
-		raopd.Debug(dlr, nil)
-	case "info":
-		raopd.Debug(ilr, ilog)
-		raopd.Debug(dlr, nil)
-	case "frbug":
-		raopd.Debug(ilr, ilog)
-		raopd.Debug(dlr, dlog)
+	err := slf.SetLevel(ls.name, ls.setting)
+	if err != nil {
+		slog.Info.Println("Could not set logging: ", err)
 	}
 }
 
@@ -97,8 +79,9 @@ func initLogHandler(mux *http.ServeMux) {
 	mux.HandleFunc("/logging.html", func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ilog.Println("Error getting ", r.URL, ", err=", err)
+			slog.Info.Println("initLogHandler: Error getting ", r.URL, ", err=", err)
 			w.WriteHeader(404)
+			fmt.Fprintln(w, "initLogHandler: Error getting ", r.URL, ", err=", err)
 			return
 		}
 		form := r.Form
@@ -114,9 +97,29 @@ func initLogHandler(mux *http.ServeMux) {
 <body>
 <h1>SquarePlay server logging</h1>
 <form>
+<h2>Loggers</h2>
 <table>
 `)
 
+		for _, logger := range slf.Loggers() {
+			name := logger.Name()
+			v := form.Get(name)
+			if v != "" {
+				lvl, err := slf.FindLevel(v)
+				if err != nil {
+					logger.SetLevel(lvl)
+				}
+			}
+			fmt.Fprintf(bw, "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+				makeSelect(name, logger.Level().String(), "off|info|debug"), name, logger.Description())
+
+		}
+
+		bw.WriteString(`
+</table>
+<h2>Tracers</h2>
+<table>
+`)
 		for _, ls := range logSettings {
 			v := form.Get(ls.name)
 			if v != "" {
@@ -125,11 +128,12 @@ func initLogHandler(mux *http.ServeMux) {
 					ls.setter(ls)
 				}
 			}
-			fmt.Fprintf(bw, "<tr><td>%s</td><td>%s</td></tr>\n", ls.name, ls.makeSelect())
+			fmt.Fprintf(bw, "<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n", ls.makeSelect(), ls.name, ls.description)
 
 		}
 		bw.WriteString(`
 </table>
+<h2>Update</h2>
 <input type="submit" value="Update"/>
 </form>
 </body>

@@ -48,16 +48,17 @@ func initUsage(mux *http.ServeMux) {
 
 	mux.HandleFunc("/html/", func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL.String()[1:]
-		ilog.Println("HANDLING html URL '", url, "'")
 		data, err := Asset(url)
 		if err != nil {
 			w.WriteHeader(404)
+			slog.Debug.Println("Could not find document for URL=", url)
 			return
 		}
 		w.Header().Add("Content-Type", getMimeType(url))
 		_, err = w.Write(data)
 		if err != nil {
 			w.WriteHeader(404)
+			slog.Info.Println("Could not write document: err=", err)
 			return
 		}
 	})

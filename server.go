@@ -20,7 +20,7 @@ func startServer(port int) {
 	initControl(serverMux)
 	initLogHandler(serverMux)
 
-	mux := LogHandler(os.Stderr, serverMux)
+	mux := &LogHandler{LogAdminHandler(os.Stderr, serverMux)}
 
 	srv := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
@@ -28,18 +28,16 @@ func startServer(port int) {
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   0, // TODO: This should only be set for chunked persistent connection / notifications
 		MaxHeaderBytes: 1 << 20,
-		ErrorLog:       stdlog.New(ilog, "HTTP:", 0),
+		ErrorLog:       stdlog.New(slog.Info, "HTTP:", 0),
 	}
 
-	ilog.Println("serving at port:", port)
+	slog.Info.Println("serving Squareplay HTTP at port:", port)
 	var err error
 	ln, err = net.Listen("tcp", srv.Addr)
 	if err != nil {
 		panic(err)
 	}
 	srv.Serve(ln)
-
-	ilog.Println("Bye bye")
 }
 
 func initDefault(mux *http.ServeMux) {
@@ -61,4 +59,13 @@ func initDefault(mux *http.ServeMux) {
 			}
 		}
 	})
+}
+
+type LogHandler struct {
+	h http.Handler
+}
+
+func (lh *LogHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	slog.Debug.Println("request: ", r.URL)
+	lh.h.ServeHTTP(w, r)
 }

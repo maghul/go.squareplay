@@ -11,23 +11,21 @@ import (
 	"time"
 
 	"github.com/maghul/go.raopd"
-	"github.com/natefinch/lumberjack"
 )
 
 var airplayers *raopd.SinkCollection
 
-var ilog *logger
-var dlog *logger
+//var ilog *logger
+//var dlog *logger
 var logfilename = ""
 var keyfilename = ""
 
 func raopdDebug(name string, value interface{}) {
-	ilog.Println("Setting RAOP debug: ", name)
+	slog.Debug.Println("Setting RAOP debug: ", name)
 	err := raopd.Debug(name, value)
 	if err != nil {
-		ilog.Println("Could not set RAOP Debug '", name, "': ", err)
+		slog.Info.Println("Could not set RAOP Debug '", name, "': ", err)
 	}
-	ilog.Println("Setting RAOP debug: ", name, "  done")
 }
 
 func main() {
@@ -39,32 +37,19 @@ func main() {
 	flag.StringVar(&keyfilename, "k", "", "Set the keyfile path")
 	flag.Parse()
 
-	if logfilename != "" {
-		ljl := &lumberjack.Logger{
-			Filename:   logfilename,
-			MaxSize:    500, // megabytes
-			MaxBackups: 3,
-			MaxAge:     28, //days
-		}
-		ljl.Rotate()
-		ilog = makeLogger("squareplay", ljl)
-		dlog = makeLogger("squareplay", ljl)
-	} else {
-		ilog = makeLogger("", os.Stderr)
-	}
-
-	ilog.Println("Starting SquarePlay Proxy 0.0.2")
+	initLogging()
+	slog.Info.Println("Starting SquarePlay Proxy 0.0.2")
 
 	if profile > 0 {
 		go http.ListenAndServe(fmt.Sprintf(":%d", profile), nil)
 	}
 
 	if len(keyfilename) == 0 {
-		ilog.Println("No keyfile specified. exiting")
+		slog.Info.Println("No keyfile specified. exiting")
 		return
 	}
 	var err error
-	ilog.Printf("Starting with keyfile='%s'", keyfilename)
+	slog.Info.Printf("Starting with keyfile='%s'", keyfilename)
 	airplayers, err = raopd.NewSinkCollection(keyfilename)
 	if err != nil {
 		panic(err)
@@ -78,6 +63,7 @@ func main() {
 }
 
 func shutdownAll() {
+	slog.Debug.Println("shutdownAll...")
 	ln.Close()
 	airplayers.Close()
 	time.Sleep(100 * time.Millisecond)
@@ -90,23 +76,12 @@ func initSignals() {
 	go func() {
 		for {
 			s := <-sc
-			ilog.Println("Received Signal: ", s)
+			slog.Debug.Println("Received Signal: ", s)
 			if s == os.Interrupt || s == os.Kill || s == syscall.SIGTERM {
 				shutdownAll()
 			}
 		}
 	}()
-	startServer(port)
-
-	ilog.Println("Closing...")
-	airplayers.Close()
-}
-
-func shutdownAll() {
-	ln.Close()
-	airplayers.Close()
-	time.Sleep(100 * time.Millisecond)
-	os.Exit(0)
 }
 
 /*

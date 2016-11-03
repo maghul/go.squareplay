@@ -86,7 +86,7 @@ func (sp *SqueezePlayer) Name() string {
 func (sp *SqueezePlayer) initPlayer() {
 	url := fmt.Sprintf("/%s/", sp.Id())
 	sp.playerHandler = http.NewServeMux()
-	dlog.Println("URL=", url)
+	slog.Debug.Println("Registering Player base URL=", url)
 
 	sp.addHandlerFunc("metadata.json", sp.metadata)
 	sp.addHandlerFunc("cover.jpg", sp.cover)
@@ -144,48 +144,50 @@ func (sp *SqueezePlayer) audio(w http.ResponseWriter, r *http.Request) {
 	bufrw.Flush()
 
 	audioCtx := context.Background()
-	dlog.Println("!!!!!!!!!!!!!!!!!!  Waiting for audio pipe to shut down", r.RemoteAddr)
+	slog.Debug.Println("Audio pipe started, holding HTTP connection", r.RemoteAddr)
 	sp.apService.NewAudioStream(audioCtx, conn)
 	<-audioCtx.Done()
-	dlog.Println("!!!!!!!!!!!!!!!!!!  Audio pipe was shut down", r.RemoteAddr)
+	slog.Debug.Println("Audio pipe closed, ending HTTP connection ", r.RemoteAddr)
 }
 
 func (sp *SqueezePlayer) getTheCommand(w http.ResponseWriter, r *http.Request) string {
 	bw := bufio.NewWriter(w)
 	url := r.URL.String()
-	dlog.Println("URL=", url)
 	is := strings.LastIndex(url, "/")
 	if is < 0 {
-		dlog.Println("URL=", "bye")
 		w.WriteHeader(400)
+		fmt.Fprintln(w, "Could not parse command URL: ", url)
+		slog.Debug.Println(w, "Could not parse command URL: ", url)
 		return ""
 	}
 	url = url[is+1:]
-	dlog.Println("URL=", url)
 	bw.Flush()
 
 	return url
 }
 
 func (sp *SqueezePlayer) control(w http.ResponseWriter, r *http.Request) {
-	sp.apService.Command(sp.getTheCommand(w, r))
+	command := sp.getTheCommand(w, r)
+	slog.Debug.Println("control command=", command)
+	sp.apService.Command(command)
 }
 
 func (sp *SqueezePlayer) volume(w http.ResponseWriter, r *http.Request) {
 	cmd := sp.getTheCommand(w, r)
-	dlog.Println("volume command ", cmd)
+	slog.Debug.Println("volume command ", cmd)
 	switch cmd {
 	case "relative":
-		dlog.Println("Setting volume to relative for ", sp)
+		slog.Debug.Println("Setting volume to relative for ", sp)
 		sp.apService.VolumeMode(false)
 	case "absolute":
-		dlog.Println("Setting volume to absolute for ", sp)
+		slog.Debug.Println("Setting volume to absolute for ", sp)
 		sp.apService.VolumeMode(true)
 	default:
 		v, err := toRaopVolume(cmd)
 		if err != nil {
-			ilog.Println("Error converting volume ", cmd, ":", err)
+			slog.Info.Println("Error converting volume ", cmd, ":", err)
 			w.WriteHeader(400)
+			fmt.Fprintln(w, "Error converting volume ", cmd, ":", err)
 			return
 		}
 		sp.apService.Volume(v)
@@ -218,14 +220,14 @@ func (sp *SqueezePlayer) notify(data []byte) {
 func (sp *SqueezePlayer) Info() *raopd.SinkInfo {
 	return sp.serviceInfo
 }
-
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
-	dlog.Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
+	slog.Debug.Println("SetCoverArt:", mimetype, " buffer size=", len(content))
 	sp.coverData = content
 	sp.notifyString("\"coverart\"")
 }
 
 func (sp *SqueezePlayer) SetMetadata(metadata string) {
+	slog.Debug.Println("SetMetadata:", metadata)
 	sp.metaData = metadata
 	sp.notifyString(metadata)
 }
