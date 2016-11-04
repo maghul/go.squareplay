@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	initLogging()
-	slog.Info.Println("Starting SquarePlay Proxy 0.0.2")
+	slog.Info.Println("Starting SquarePlay 0.0.3")
 
 	if profile > 0 {
 		go http.ListenAndServe(fmt.Sprintf(":%d", profile), nil)
