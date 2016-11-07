@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"sync"
 )
 
 func initControl(mux *http.ServeMux) {
@@ -13,11 +14,16 @@ func initControl(mux *http.ServeMux) {
 	mux.HandleFunc("/notifications.json", notifications)
 }
 
+var startMutex = &sync.Mutex{}
+
 func start(w http.ResponseWriter, r *http.Request) {
 	id := r.Header.Get("Airplay-Session-Id")
 	name := r.Header.Get("Airplay-Session-Name")
 
 	fmt.Println("Starting client: name=", name, ", id=", id)
+	startMutex.Lock()
+	defer startMutex.Unlock()
+
 	_, ok := allSqueezePlayers[id]
 	if ok {
 		fmt.Fprintf(w, "Player %s[%s] already started\r\n", name, id)
