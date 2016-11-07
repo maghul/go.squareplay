@@ -22,7 +22,8 @@ type SqueezePlayer struct {
 	coverData     []byte
 	metaData      string
 
-	h *host
+	h    *host
+	name string
 }
 
 var allSqueezePlayers = newSyncMap()
@@ -45,8 +46,8 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 			Port:             0,
 		}
 
-		sp := &SqueezePlayer{nil, si, nil, nil, nil, "", h}
-		sp.initPlayer(serverMux)
+		sp := &SqueezePlayer{nil, si, nil, nil, nil, "", h, name}
+		sp.initPlayer()
 
 		sp.apService, err = airplayers.Register(sp)
 		if err != nil {
@@ -62,6 +63,18 @@ func startPlayer(name, id string, h *host) (*SqueezePlayer, error) {
 	return spi.(*SqueezePlayer), err
 }
 
+func stopPlayer(name, id string) error {
+	spi, err := allSqueezePlayers.Remove(id)
+	if err != nil {
+		return err
+	}
+	sp := spi.(*SqueezePlayer)
+
+	sp.shutdown()
+
+	return nil
+}
+
 func (sp *SqueezePlayer) Id() string {
 	return sp.serviceInfo.HardwareAddress.String()
 }
@@ -70,11 +83,10 @@ func (sp *SqueezePlayer) Name() string {
 	return sp.serviceInfo.Name
 }
 
-func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
+func (sp *SqueezePlayer) initPlayer() {
 	url := fmt.Sprintf("/%s/", sp.Id())
 	sp.playerHandler = http.NewServeMux()
 	dlog.Println("URL=", url)
-	mux.Handle(url, sp.playerHandler)
 
 	sp.addHandlerFunc("metadata.json", sp.metadata)
 	sp.addHandlerFunc("cover.jpg", sp.cover)
@@ -86,6 +98,10 @@ func (sp *SqueezePlayer) initPlayer(mux *http.ServeMux) {
 }
 
 func (sp *SqueezePlayer) close() {
+}
+
+func (sp *SqueezePlayer) shutdown() {
+	airplayers.Unregister(sp)
 }
 
 func (sp *SqueezePlayer) metadata(w http.ResponseWriter, r *http.Request) {
@@ -209,7 +225,7 @@ func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
 	sp.notifyString("\"coverart\"")
 }
 
-func (sp *SqueezePlayer) SetMetadata(metadata []byte) {
+func (sp *SqueezePlayer) SetMetadata(metadata string) {
 	sp.metaData = metadata
 	sp.notifyString(metadata)
 }
@@ -255,4 +271,9 @@ func (sp *SqueezePlayer) Stopped() {
 
 // Called when the sink has been removed
 func (sp *SqueezePlayer) Closed() {
+}
+
+// A name for the player
+func (sp *SqueezePlayer) String() string {
+	return sp.name
 }

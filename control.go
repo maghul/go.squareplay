@@ -19,6 +19,7 @@ func initControl(mux *http.ServeMux) {
 
 	mux.HandleFunc("/control/restart", restart)
 	mux.HandleFunc("/control/start", start)
+	mux.HandleFunc("/control/stop", stop)
 	mux.HandleFunc("/control/notify", notify)
 	mux.HandleFunc("/control/logger", handleLogger)
 	mux.HandleFunc("/notifications.json", notifications)
@@ -55,19 +56,45 @@ func decodePlayers(w http.ResponseWriter, r *http.Request) []*playerJson {
 }
 
 func start(w http.ResponseWriter, r *http.Request) {
-	ilog.Println("start client")
+	ilog.Println("client/start called")
 
 	host := getHost(r.Host)
+	w.Header().Add("Content-Type", "text/text")
+	fmt.Fprintf(w, "[\r\n")
 	for _, pj := range decodePlayers(w, r) {
-		ilog.Println("Starting client: ", pj, " from host", host)
+		ilog.Println("Starting player: ", pj, " from host", host)
 		_, err := startPlayer(pj.Name, pj.Id, host)
 		if err != nil {
 			w.WriteHeader(404)
-			fmt.Fprintf(w, "Player %s[%s] could not be started: %v\r\n", pj.Name, pj.Id, err)
+			ilog.Printf("Player %s[%s] could not be started: %v\n", pj.Name, pj.Id, err)
+			fmt.Fprintf(w, "{ \"%s\": \"Failed\" }\r\n", pj.Id)
 		} else {
-			fmt.Fprintf(w, "Player %s[%s] started\r\n", pj.Name, pj.Id)
+			ilog.Printf("Player %s[%s] started\n", pj.Name, pj.Id)
+			fmt.Fprintf(w, "{ \"%s\": \"OK\" }\r\n", pj.Id)
 		}
 	}
+	fmt.Fprintf(w, "]\r\n")
+}
+
+func stop(w http.ResponseWriter, r *http.Request) {
+	ilog.Println("client/stop called")
+
+	host := getHost(r.Host)
+	w.Header().Add("Content-Type", "text/text")
+	fmt.Fprintf(w, "[\r\n")
+	for _, pj := range decodePlayers(w, r) {
+		ilog.Println("Stopping player: ", pj, " from host", host)
+		err := stopPlayer(pj.Name, pj.Id)
+		if err != nil {
+			w.WriteHeader(404)
+			ilog.Printf("Player %s[%s] could not be stopped: %v\n", pj.Name, pj.Id, err)
+			fmt.Fprintf(w, "{ \"%s\": \"Failed\" }\r\n", pj.Id)
+		} else {
+			ilog.Printf("Player %s[%s] stopped\n", pj.Name, pj.Id)
+			fmt.Fprintf(w, "{ \"%s\": \"Bye\" }\r\n", pj.Id)
+		}
+	}
+	fmt.Fprintf(w, "]\r\n")
 }
 
 func notify(w http.ResponseWriter, r *http.Request) {
