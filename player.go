@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -156,11 +157,13 @@ func (sp *SqueezePlayer) volume(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sp *SqueezePlayer) notifyString(data string) {
-	buf := bytes.NewBufferString("")
-	buf.WriteRune('"')
+	buf := bytes.NewBufferString("{ \"")
+	buf.WriteString(sp.Id())
+	buf.WriteString("\":")
 	buf.WriteString(data)
-	buf.WriteRune('"')
-	sp.notify(buf.Bytes())
+	buf.WriteString("}")
+	// TODO: Send the client as part of the notification to avoid slushing bytes about
+	notificationChannel <- buf.Bytes()
 }
 
 func (sp *SqueezePlayer) notify(data []byte) {
@@ -194,7 +197,7 @@ func (sp *SqueezePlayer) AudioWriterErr(err error) {
 func (sp *SqueezePlayer) SetCoverArt(mimetype string, content []byte) {
 	fmt.Println("LoadCoverArt:", mimetype, " buffer size=", len(content))
 	sp.coverData = content
-	sp.notifyString("coverart")
+	sp.notifyString("\"coverart\"")
 }
 
 func (sp *SqueezePlayer) SetMetadata(metadata []byte) {
@@ -205,24 +208,33 @@ func (sp *SqueezePlayer) SetMetadata(metadata []byte) {
 // Set the volume of the output device. The volume value may be an absolute
 // value from 0 - 100, or it may be up down values using UP=1000 and DOWN=-1000
 func (sp *SqueezePlayer) SetVolume(volume float32) {
+	switch volume {
+	case 1000:
+		sp.notifyString(fmt.Sprintf("{ \"volume\": \"+2\" }"))
+	case -1000:
+		sp.notifyString(fmt.Sprintf("{ \"volume\": \"-2\" }"))
+	default:
+		sp.notifyString(fmt.Sprintf("{ \"volume\": %d }", int(volume)))
+	}
 }
 
 // Shows the progress of the track in milliseconds.
 // pos is the current position, length is the total length of the current track
 func (sp *SqueezePlayer) SetProgress(pos, length int) {
+	sp.notifyString(fmt.Sprintf("{ \"progress\": { \"current\": %d, \"length\": %d }}", pos, length))
 }
 
 // Called when the stream is started.
 func (sp *SqueezePlayer) Play() {
-	sp.notifyString("play")
+	sp.notifyString("\"play\"")
 }
 
 // Called when the stream is paused
 func (sp *SqueezePlayer) Pause() {
-	sp.notifyString("pause")
+	sp.notifyString("\"pause\"")
 }
 
 // Called when the connection to source is terminated
 func (sp *SqueezePlayer) Close() {
-	sp.notifyString("stop")
+	sp.notifyString("\"stop\"")
 }
