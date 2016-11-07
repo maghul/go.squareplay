@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/maghul/go.raopd"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var apServiceRegistry *raopd.ServiceRegistry
@@ -13,8 +15,14 @@ func main() {
 	fmt.Println("Starting SquarePlay Proxy 0.0.1(beta)")
 
 	var port int
+	var profile int
 	flag.IntVar(&port, "w", 6111, "The server port for the proxy")
+	flag.IntVar(&profile, "pprof", 0, "Set to a port to enable profiling")
 	flag.Parse()
+
+	if profile > 0 {
+		go http.ListenAndServe(fmt.Sprintf(":%d", profile), nil)
+	}
 
 	var err error
 	apServiceRegistry, err = raopd.NewServiceRegistry()
